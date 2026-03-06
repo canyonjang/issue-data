@@ -47,14 +47,19 @@ with tab1:
     
     st.divider()
     st.subheader("3. 질문 던지기 (최대 3개)")
-    st.info("💡 1개 이상의 질문을 반드시 작성해야 합니다.")
+    st.info("💡 각 질문은 최대 150자까지 작성 가능하며, 최소 1개 이상의 질문을 반드시 작성해야 합니다.")
     
     questions_to_submit = []
     for i in range(1, 4):
         with st.expander(f"질문 {i} 작성", expanded=(i==1)):
-            q_target = st.selectbox(f"질문 {i} 대상", ["입장A", "입장B"], key=f"target_{i}")
+            # 1. 질문 대상 세분화 (A1, A2, B1, B2)
+            q_target = st.selectbox(f"질문 {i} 대상", ["입장 A1", "입장 A2", "입장 B1", "입장 B2"], key=f"target_{i}")
             q_type = st.selectbox(f"질문 {i} 유형", ["사실", "추론", "비판"], key=f"type_{i}")
-            q_content = st.text_area(f"질문 {i} 내용", key=f"content_{i}")
+            
+            # 2. 글자 수 제한 및 캡션 반영
+            q_content = st.text_area(f"질문 {i} 내용", key=f"content_{i}", max_chars=150, placeholder="질문을 150자 이내로 입력하세요...")
+            st.caption(f"현재 글자 수: {len(q_content)} / 150자")
+            
             if q_content.strip():
                 questions_to_submit.append({"대상": q_target, "유형": q_type, "내용": q_content})
 
@@ -80,21 +85,18 @@ with tab1:
                     except: updated = new_df
                     conn.update(worksheet=sheet, data=updated)
                 st.success("성공적으로 제출되었습니다!")
-                time.sleep(1)
+                time.sleep(3)
                 st.rerun()
             except Exception as e:
                 st.error(f"저장 오류: {e}")
 
 # --- 교수님 인증 확인 로직 ---
 if input_pw == PROFESSOR_PASSWORD:
-    # 교수님이 비밀번호를 맞게 입력했을 때만 데이터를 가져옵니다.
-    # [새로고침 버튼] 버튼을 누를 때만 최신 데이터를 읽어오도록 ttl=0 설정
     if st.sidebar.button("🔄 실시간 데이터 새로고침"):
-        st.cache_data.clear() # 캐시를 강제로 비워 새 데이터를 가져오게 함
+        st.cache_data.clear() 
         st.success("최신 데이터를 성공적으로 불러왔습니다.")
 
     try:
-        # 새로고침 버튼을 누를 때 최신 데이터를 읽어옴 (ttl=0)
         issue_df = conn.read(worksheet=CURRENT_ISSUE_NAME, ttl=0)
     except:
         issue_df = pd.DataFrame()
@@ -126,24 +128,29 @@ if input_pw == PROFESSOR_PASSWORD:
     with tab3:
         st.header(f"❓ {CURRENT_ISSUE_NAME} 질문 리스트")
         if not issue_df.empty:
-            for side in ["입장A", "입장B"]:
+            # 세분화된 대상 리스트 순회
+            for side in ["입장 A1", "입장 A2", "입장 B1", "입장 B2"]:
                 st.subheader(f"📍 {side}를 향한 질문")
                 s_df = issue_df[issue_df["대상입장"] == side]
-                cf, ci, cc = st.columns(3)
-                with cf:
-                    st.info("사실 질문")
-                    for q in s_df[s_df["질문유형"] == "사실"]["질문내용"]: st.write(f"- {q}")
-                with ci:
-                    st.warning("추론 질문")
-                    for q in s_df[s_df["질문유형"] == "추론"]["질문내용"]: st.write(f"- {q}")
-                with cc:
-                    st.error("비판 질문")
-                    for q in s_df[s_df["질문유형"] == "비판"]["질문내용"]: st.write(f"- {q}")
+                
+                if s_df.empty:
+                    st.caption("해당 발표자에게 접수된 질문이 없습니다.")
+                else:
+                    cf, ci, cc = st.columns(3)
+                    with cf:
+                        st.info("사실 질문")
+                        for q in s_df[s_df["질문유형"] == "사실"]["질문내용"]: st.write(f"- {q}")
+                    with ci:
+                        st.warning("추론 질문")
+                        for q in s_df[s_df["질문유형"] == "추론"]["질문내용"]: st.write(f"- {q}")
+                    with cc:
+                        st.error("비판 질문")
+                        for q in s_df[s_df["질문유형"] == "비판"]["질문내용"]: st.write(f"- {q}")
+                st.divider()
         else:
             st.info("표시할 질문 데이터가 없습니다. 새로고침 버튼을 눌러보세요.")
 
 else:
-    # 비밀번호가 틀리거나 입력되지 않은 경우
     with tab2:
         st.warning("🔒 교수님 비밀번호를 입력해야 결과를 볼 수 있습니다.")
     with tab3:
