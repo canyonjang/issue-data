@@ -80,7 +80,6 @@ with tab1:
             st.error("이름, 학번, 질문 내용을 모두 입력해주세요.")
         else:
             try:
-                # 테이블 이름 반영: class_responses
                 supabase.table("class_responses").insert(questions_to_submit).execute()
                 st.success("성공적으로 제출되었습니다!")
                 time.sleep(2)
@@ -118,9 +117,15 @@ if input_pw == PROFESSOR_PASSWORD:
             
             st.divider()
             st.subheader("🔄 입장이 바뀐 학생 (강조)")
-            def highlight(row):
-                return ['background-color: #FFD700; color: black'] * len(row) if row["pre_vote"] != row["post_vote"] else [''] * len(row)
             
+            # [이미지 추가: 테이블의 색상 강조가 어떻게 이루어지는지 보여주는 다이어그램]
+            # 
+
+            # 핵심 수정: highlight 함수가 한글 컬럼명을 인식하도록 변경
+            def highlight(row):
+                return ['background-color: #FFD700; color: black'] * len(row) if row["사전투표"] != row["사후투표"] else [''] * len(row)
+            
+            # 화면 표시용 데이터프레임 구성 (먼저 이름을 바꾼 후 스타일 적용)
             display_df = uv[["student_name", "student_id", "pre_vote", "post_vote"]].rename(
                 columns={"student_name": "이름", "student_id": "학번", "pre_vote": "사전투표", "post_vote": "사후투표"}
             )
