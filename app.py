@@ -96,7 +96,7 @@ if input_pw == PROFESSOR_PASSWORD:
         st.success("최신 데이터를 불러왔습니다.")
 
     try:
-        response = supabase.table("issue question").select("*").eq("issue_name", CURRENT_ISSUE_NAME).execute()
+        response = supabase.table("class_responses").select("*").eq("issue_name", CURRENT_ISSUE_NAME).execute()
         issue_df = pd.DataFrame(response.data)
     except:
         issue_df = pd.DataFrame()
@@ -131,3 +131,4 @@ if input_pw == PROFESSOR_PASSWORD:
                         st.error("비판")
                         for _, q in s_df[s_df["q_type"] == "비판"].iterrows():
                             st.write(f"- {q['q_content']} ({q['student_name']} / {q['created_at_kst'][11:16]})")
+
